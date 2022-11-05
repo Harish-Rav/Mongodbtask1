@@ -1,0 +1,168 @@
+# Mongodb student database task
+import pymongo
+import json
+from pymongo import MongoClient
+# establish connection
+client = pymongo.MongoClient('mongodb://127.0.0.1:27017/')
+# creating client
+db = client["Mongodb1"]
+# creating table
+Collection = db["data"]
+f = open("C:/Users/hp/Downloads/students.json")
+data = json.load(f)
+if isinstance(data, list):
+    Collection.insert_many(data)
+else:
+    Collection.insert_one(data)
+print("Collection Created from json file and the new Collection is")
+for i in Collection.find():
+    print(i)
+
+# 1) Student Who scored maximum scores in All
+for i in Collection.aggregate([{"$project":{"name": 1, "total_marks": {"$max": "$scores.score"}}},
+                               {"$sort": {"total_marks": -1}}, {"$limit": 1}
+                               ]):
+    b = i
+print("1) Student who scored highest score in all ")
+print(b)
+
+# 2) Students who scored below average in exam
+print("2) Student who scored below average in exam:")
+for i in Collection.find({}, {"scores.score": 1, "_id": 1, "name": 1}):
+    if i["scores"][0]["score"] < 40:
+        print("ID:", i["_id"], " Name:", i["name"], "  Exam_Score:", i["scores"][0]["score"])
+
+# 3) Assigning pass and fail category
+
+# Creating new fields for category:
+Collection.update_many(
+    {},
+        {
+            "$set": {"Exam_C" : ""}
+        }
+)
+Collection.update_many(
+    { },
+        {
+           "$set": {"Quiz_C" : ""}
+            }
+)
+Collection.update_many(
+    { },
+        {
+            "$set": {"Homework_C" : ""}
+        }
+)
+# Assigning category for exam marks
+s = 0
+for i in Collection.find({}, {"scores.score": 1, "_id": 1}):
+    if i["scores"][0]["score"] < 40.0:
+        Collection.update_one({"_id": s}, {"$set": {"Exam_C": "Fail"}})
+    else:
+        Collection.update_one({"_id": s}, {"$set": {"Exam_C": "Pass"}})
+    s += 1
+
+# Assigning category for Quiz marks
+s=0
+for i in Collection.find({}, {"scores.score": 1, "_id": 1}):
+    if i["scores"][1]["score"] < 40.0:
+        Collection.update_one({"_id": s},{"$set": {"Quiz_C": "Fail"}})
+    else:
+        Collection.update_one({"_id":s},{"$set": { "Quiz_C" : "Pass" } })
+    s+=1
+
+# Assigning category for Homework marks
+s=0
+for i in Collection.find({},{"scores.score":1,"_id":1}):
+    if i["scores"][2]["score"] < 40.0:
+        Collection.update_one({"_id":s},{"$set": { "Homework_C" : "Fail" } })
+    else:
+        Collection.update_one({"_id":s},{"$set": { "Homework_C" : "Pass" } })
+    s+=1
+
+print("3)Pass and Fail categories has been assigned for all the students based on marks")
+for i in Collection.find():
+    print(i)
+
+# 4) Find Total and AVERAGE
+# creating new collection
+Collection4 = db["Category"]
+
+# Create Total and Average Fields
+Collection.update_many(
+    { },
+        {
+            "$set": { "Total" : 0 }
+        }
+)
+Collection.update_many(
+    { },
+        {
+           "$set": { "Average" : 0 }
+            }
+)
+
+# Assigning Total values
+total=0
+s=0
+for i in Collection.find({},{"scores.score":1,}):
+    total = i["scores"][0]["score"] + i["scores"][1]["score"] + i["scores"][2]["score"]
+    Collection.update_one({"_id":s},{"$set": { "Total" : total} })
+    s+=1
+
+# Assigning Average values
+Average=0
+s=0
+for i in Collection.find({},{"scores.score":1,"Total":1}):
+    Average = i["Total"]/3
+    Collection.update_one({"_id":s},{"$set": { "Average" : Average} })
+    s+=1
+v={}
+for i in Collection.find():
+    v = {"_id":i["_id"],"name":i["name"],"Total":i["Total"],"Average":i["Average"]}
+    Collection4.insert_one(v)
+print("4) Total and average has been calculated for all the students")
+for i in Collection4.find():
+    print(i)
+
+# 5) Create new Collection for students who scored Above 40 and below 40 in all
+
+# new collection
+Collection5 = db["new"]
+for i in Collection.find():
+    if i["Exam_C"] == "Fail" and i["Quiz_C"] == "Fail" and i["Homework_C"] == "Fail":
+        z = {"_id":i["_id"],"name":i["name"],"Category":"Failed in All 3"}
+        Collection5.insert_one(z)
+    elif i["Exam_C"] == "Pass" and i["Quiz_C"] == "Pass" and i["Homework_C"] == "Pass":
+        z = {"_id":i["_id"],"name":i["name"],"Category":"Passed in All 3"}
+        Collection5.insert_one(z)
+print("New collection for categorising students who above 40% in all three and below average in all three")
+for i in Collection5.find():
+    print(i)
+# 6) Create new Collection for students who scored below fail mark in all
+
+# create new collection
+Collection2 = db["Failed"]
+m=0
+z={}
+for i in Collection.find():
+    if i["Exam_C"] == "Fail" and i["Quiz_C"] == "Fail" and i["Homework_C"] == "Fail":
+        z = {"_id":i["_id"],"name":i["name"],"Category":"Failed in All 3"}
+        Collection2.insert_one(z)
+print("6) The new Collection for Student who failed in all categories")
+for i in Collection2.find():
+    print(i)
+# 7) Create new Collection for students who scored above fail mark in all
+
+# create new collection
+Collection3 = db["Passed"]
+m = 0
+z = {}
+for i in Collection.find():
+    if i["Exam_C"] == "Pass" and i["Quiz_C"] == "Pass" and i["Homework_C"] == "Pass":
+        z = {"_id":i["_id"],"name":i["name"],"Category":"Passed in All 3"}
+        Collection3.insert_one(z)
+print("7) The new Collection for Student who Passed in all categories")
+for i in Collection3.find():
+    print(i)
+
