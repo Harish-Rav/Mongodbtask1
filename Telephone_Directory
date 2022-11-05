@@ -1,0 +1,34 @@
+# Mongodb task 2 Telephone directory
+import pymongo
+from pymongo import MongoClient
+# establish connection
+client = pymongo.MongoClient('mongodb://127.0.0.1:27017/')
+# creating Db
+db = client["Telletask"]
+# creating Collection
+Collection = db["Telephone_Directory"]
+Collection.insert_one({"_id":1,"Name":"Hari","Phone":"999999","Place":"Chennai"})
+Collection.insert_many([{"_id":2,"Name":"Pari","Phone":"998888","Place":"Chennai"},{"_id":3,"Name":"Kari","Phone":"929999","Place":"Chennai"},{"_id":4,"Name":"Kelly","Phone":"789999","Place":"Trichy"},
+{"_id":5,"Name":"Neeraj","Phone":"699999","Place":"Trichy"},
+{"_id":6,"Name":"Sonu","Phone":"999239","Place":"Madurai"},
+{"_id":7,"Name":"Jeerat","Phone":"928888","Place":"Madurai"},
+{"_id":8,"Name":"Velu","Phone":"945679","Place":"Chennai"},
+{"_id":9,"Name":"priya","Phone":"987432","Place":"Madurai"},
+{"_id":10,"Name":"Keerthi","Phone":"991109","Place":"Trichy"}])
+
+print("\n The new created collection is:\n")
+for i in Collection.find():
+    print(i)
+
+#update_one
+Collection.update_one({"_id":5}, {"$set":{"Phone":"984567"}})
+print("\n The collection after update is:\n")
+for i in Collection.find():
+    print(i)
+
+#deleteOne
+Collection.delete_one({"_id":1})
+
+print("\n The collection after deleting is:\n")
+for i in Collection.find():
+    print(i)
